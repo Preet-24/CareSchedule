@@ -4,7 +4,11 @@ using CareSchedule.Models;
 using CareSchedule.Repositories.Interface;
 using CareSchedule.Services.Interface;
 
+<<<<<<< HEAD
 namespace CareSchedule.Services.Implementation
+=======
+namespace CareSchedule.Services
+>>>>>>> origin/main
 {
     public class SiteService : ISiteService
     {

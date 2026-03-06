@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using CareSchedule.Models;
 using Microsoft.EntityFrameworkCore;
 
