@@ -1,113 +1,79 @@
-using System.Text.Json;
 using CareSchedule.DTOs;
 using CareSchedule.Models;
 using CareSchedule.Repositories.Interface;
 using CareSchedule.Services.Interface;
+using System.Collections.Generic;
 
 namespace CareSchedule.Services.Implementation
 {
     public class SiteService : ISiteService
     {
         private readonly ISiteRepository _repo;
+        public SiteService(ISiteRepository repo) => _repo = repo;
 
-        public SiteService(ISiteRepository repo)
+        public List<SiteDto> SearchSite(SiteSearchQuery q)
         {
-            _repo = repo;
+            var (items, _) = _repo.Search(
+                q.Name,
+                q.Status,
+                q.Page <= 0 ? 1 : q.Page,
+                q.PageSize <= 0 ? 25 : q.PageSize,
+                sortBy: string.IsNullOrWhiteSpace(q.SortBy) ? "name" : q.SortBy,
+                sortDir: string.IsNullOrWhiteSpace(q.SortDir) ? "asc" : q.SortDir
+            );
+
+            var list = new List<SiteDto>(items.Count);
+            foreach (var s in items) list.Add(Map(s));
+            return list;
         }
 
-        public List<SiteDto> SearchSite(SiteSearchQuery query)
+        public SiteDto GetSite(int id)
         {
-            var (items, _) = _repo.SearchAsync(
-                query.Name,
-                query.Status,
-                query.Page,
-                query.PageSize,
-                query.SortBy,
-                query.SortDir,
-                CancellationToken.None
-            ).GetAwaiter().GetResult();
-
-            return items.Select(Map).ToList();
-        }
-
-        public SiteDto? GetSite(int id)
-        {
-            var site = _repo.GetAsync(id, CancellationToken.None)
-                            .GetAwaiter().GetResult();
-            return site is null ? null : Map(site);
+            var s = _repo.Get(id);
+            if (s is null) throw new KeyNotFoundException("Site not found.");
+            return Map(s);
         }
 
         public SiteDto CreateSite(SiteCreateDto dto)
         {
-            Validate(dto);
-
-            var entity = new Site
+            if (string.IsNullOrWhiteSpace(dto.Name)) throw new ArgumentException("Name is required.");
+            var e = new Site
             {
                 Name = dto.Name.Trim(),
-                AddressJson = NormalizeJson(dto.AddressJson),
-                Timezone = dto.Timezone,
+                AddressJson = dto.AddressJson,
+                Timezone = string.IsNullOrWhiteSpace(dto.Timezone) ? "UTC" : dto.Timezone.Trim(),
                 Status = "Active"
             };
-
-            entity = _repo.CreateAsync(entity, CancellationToken.None)
-                          .GetAwaiter().GetResult();
-
-            return Map(entity);
+            e = _repo.Create(e);
+            return Map(e);
         }
 
         public SiteDto UpdateSite(int id, SiteUpdateDto dto)
         {
-            var entity = _repo.GetAsync(id, CancellationToken.None)
-                              .GetAwaiter().GetResult()
-                        ?? throw new KeyNotFoundException("Site not found.");
+            var e = _repo.Get(id);
+            if (e is null) throw new KeyNotFoundException("Site not found.");
 
-            if (!string.IsNullOrWhiteSpace(dto.Name))
-                entity.Name = dto.Name.Trim();
+            if (!string.IsNullOrWhiteSpace(dto.Name)) e.Name = dto.Name.Trim();
+            if (dto.AddressJson is not null) e.AddressJson = dto.AddressJson;
+            if (!string.IsNullOrWhiteSpace(dto.Timezone)) e.Timezone = dto.Timezone.Trim();
 
-            if (dto.AddressJson is not null)
-                entity.AddressJson = NormalizeJson(dto.AddressJson);
-
-            if (!string.IsNullOrWhiteSpace(dto.Timezone))
-            {
-                ValidateTimezone(dto.Timezone);
-                entity.Timezone = dto.Timezone;
-            }
-
-            _repo.UpdateAsync(entity, CancellationToken.None)
-                 .GetAwaiter().GetResult();
-
-            return Map(entity);
+            _repo.Update(e);
+            return Map(e);
         }
 
         public void DeactivateSite(int id)
         {
-            var entity = _repo.GetAsync(id, CancellationToken.None)
-                              .GetAwaiter().GetResult()
-                        ?? throw new KeyNotFoundException("Site not found.");
-
-            if (entity.Status == "Inactive") return;
-
-            entity.Status = "Inactive";
-
-            _repo.UpdateAsync(entity, CancellationToken.None)
-                 .GetAwaiter().GetResult();
+            var e = _repo.Get(id);
+            if (e is null) throw new KeyNotFoundException("Site not found.");
+            if (e.Status != "Inactive") { e.Status = "Inactive"; _repo.Update(e); }
         }
 
         public void ActivateSite(int id)
         {
-            var entity = _repo.GetAsync(id, CancellationToken.None)
-                              .GetAwaiter().GetResult()
-                        ?? throw new KeyNotFoundException("Site not found.");
-
-            if (entity.Status == "Active") return;
-
-            entity.Status = "Active";
-
-            _repo.UpdateAsync(entity, CancellationToken.None)
-                 .GetAwaiter().GetResult();
+            var e = _repo.Get(id);
+            if (e is null) throw new KeyNotFoundException("Site not found.");
+            if (e.Status != "Active") { e.Status = "Active"; _repo.Update(e); }
         }
-
-        // --- helpers ---
 
         private static SiteDto Map(Site s) => new()
         {
@@ -117,38 +83,5 @@ namespace CareSchedule.Services.Implementation
             Timezone = s.Timezone,
             Status = s.Status
         };
-
-        private static void Validate(SiteCreateDto dto)
-        {
-            if (string.IsNullOrWhiteSpace(dto.Name))
-                throw new ArgumentException("Name is required.");
-
-            if (string.IsNullOrWhiteSpace(dto.Timezone))
-                dto.Timezone = "UTC";
-
-            ValidateTimezone(dto.Timezone);
-        }
-
-        private static void ValidateTimezone(string tz)
-        {
-            // Accept only known system time zones
-            if (!TimeZoneInfo.GetSystemTimeZones().Any(z => z.Id.Equals(tz, StringComparison.OrdinalIgnoreCase)))
-                throw new ArgumentException("Invalid timezone.");
-        }
-
-        private static string? NormalizeJson(string? json)
-        {
-            if (string.IsNullOrWhiteSpace(json)) return null;
-            try
-            {
-                var doc = JsonDocument.Parse(json);
-                return JsonSerializer.Serialize(doc.RootElement);
-            }
-            catch
-            {
-                // keep as-is if not valid JSON (admin free-form)
-                return json;
-            }
-        }
     }
 }

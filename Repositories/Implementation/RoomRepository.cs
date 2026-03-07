@@ -14,32 +14,33 @@ namespace CareSchedule.Repositories.Implementation
             _db = db;
         }
 
-        public async Task<(List<Room> Items, int Total)> SearchAsync(
-            string? RoomName,
-            string? RoomType,
+        public (List<Room> Items, int Total) Search(
+            string? roomName,
+            string? roomType,
             string? status,
             int? siteId,
             int page,
             int pageSize,
             string? sortBy,
-            string? sortDir,
-            CancellationToken ct = default)
+            string? sortDir)
         {
             if (page <= 0) page = 1;
             if (pageSize <= 0) pageSize = 25;
 
             var query = _db.Rooms.AsNoTracking().AsQueryable();
 
-            if (!string.IsNullOrWhiteSpace(RoomName))
+            if (!string.IsNullOrWhiteSpace(roomName))
             {
-                var pattern = RoomName.Trim();
+                var pattern = roomName.Trim();
                 query = query.Where(r => EF.Functions.Like(r.RoomName, $"%{pattern}%"));
             }
 
-            if (!string.IsNullOrWhiteSpace(RoomType))
+            if (!string.IsNullOrWhiteSpace(roomType))
             {
-                var pattern = RoomType.Trim();
-                query = query.Where(r => EF.Functions.Like(r.RoomType, $"%{pattern}%"));
+                var pattern = roomType.Trim();
+                // If your Room entity has RoomType column, this will work.
+                // If not, remove this filter.
+                query = query.Where(r => EF.Functions.Like(r.RoomType!, $"%{pattern}%"));
             }
 
             if (!string.IsNullOrWhiteSpace(status))
@@ -53,43 +54,44 @@ namespace CareSchedule.Repositories.Implementation
                 query = query.Where(r => r.SiteId == siteId.Value);
             }
 
-            // Sorting
+            // Sorting (use lowercase keys)
             bool desc = string.Equals(sortDir, "desc", StringComparison.OrdinalIgnoreCase);
             query = (sortBy?.ToLowerInvariant()) switch
             {
-                "RoomName"     => desc ? query.OrderByDescending(r => r.RoomName)     : query.OrderBy(r => r.RoomName),
+                "roomname" => desc ? query.OrderByDescending(r => r.RoomName) : query.OrderBy(r => r.RoomName),
+                "roomtype" => desc ? query.OrderByDescending(r => r.RoomType) : query.OrderBy(r => r.RoomType),
                 "status"   => desc ? query.OrderByDescending(r => r.Status)   : query.OrderBy(r => r.Status),
                 "siteid"   => desc ? query.OrderByDescending(r => r.SiteId)   : query.OrderBy(r => r.SiteId),
                 _          => query.OrderBy(r => r.RoomName)
             };
 
-            var total = await query.CountAsync(ct);
+            var total = query.Count();
 
-            var items = await query
+            var items = query
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
-                .ToListAsync(ct);
+                .ToList();
 
             return (items, total);
         }
 
-        public async Task<Room?> GetAsync(int id, CancellationToken ct = default)
+        public Room? Get(int id)
         {
-            return await _db.Rooms.AsNoTracking()
-                .FirstOrDefaultAsync(r => r.RoomId == id, ct);
+            return _db.Rooms.AsNoTracking()
+                .FirstOrDefault(r => r.RoomId == id);
         }
 
-        public async Task<Room> CreateAsync(Room entity, CancellationToken ct = default)
+        public Room Create(Room entity)
         {
             _db.Rooms.Add(entity);
-            await _db.SaveChangesAsync(ct);
+            _db.SaveChanges();
             return entity;
         }
 
-        public async Task UpdateAsync(Room entity, CancellationToken ct = default)
+        public void Update(Room entity)
         {
             _db.Rooms.Update(entity);
-            await _db.SaveChangesAsync(ct);
+            _db.SaveChanges();
         }
     }
 }

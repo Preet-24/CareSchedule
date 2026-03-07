@@ -7,7 +7,6 @@ namespace CareSchedule.API.Controllers
 {
     [ApiController]
     [Route("api/masterdata/sites")]
-    [Produces("application/json")]
     public class SitesController : ControllerBase
     {
         private readonly ISiteService _service;

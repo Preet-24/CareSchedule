@@ -1,24 +1,24 @@
+using System.Collections.Generic;
 using CareSchedule.Models;
 
 namespace CareSchedule.Repositories.Interface
 {
     public interface IRoomRepository
     {
-        Task<(List<Room> Items, int Total)> SearchAsync(
-            string? RoomName,
-            string? RoomType,
+        (List<Room> Items, int Total) Search(
+            string? roomName,
+            string? roomType,
             string? status,
             int? siteId,
             int page,
             int pageSize,
             string? sortBy,
-            string? sortDir,
-            CancellationToken ct = default);
+            string? sortDir);
 
-        Task<Room?> GetAsync(int id, CancellationToken ct = default);
+        Room? Get(int id);
 
-        Task<Room> CreateAsync(Room entity, CancellationToken ct = default);
+        Room Create(Room entity);
 
-        Task UpdateAsync(Room entity, CancellationToken ct = default);
+        void Update(Room entity);
     }
 }
