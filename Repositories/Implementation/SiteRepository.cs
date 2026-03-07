@@ -1,7 +1,7 @@
+using CareSchedule.Infrastructure.Data;
 using CareSchedule.Models;
 using CareSchedule.Repositories.Interface;
 using Microsoft.EntityFrameworkCore;
-using CareSchedule.Infrastructure.Data;
 
 namespace CareSchedule.Repositories.Implementation
 {
@@ -14,11 +14,10 @@ namespace CareSchedule.Repositories.Implementation
             _db = db;
         }
 
-        public async Task<(IReadOnlyList<Site> Items, int Total)> SearchAsync(
+        public (List<Site> Items, int Total) Search(
             string? name, string? status,
             int page, int pageSize,
-            string sortBy, string sortDir,
-            CancellationToken ct = default)
+            string? sortBy, string? sortDir)
         {
             var q = _db.Sites.AsNoTracking().AsQueryable();
 
@@ -34,6 +33,7 @@ namespace CareSchedule.Repositories.Implementation
             }
 
             var asc = !string.Equals(sortDir, "desc", StringComparison.OrdinalIgnoreCase);
+
             q = (sortBy?.ToLower()) switch
             {
                 "timezone" => asc ? q.OrderBy(x => x.Timezone) : q.OrderByDescending(x => x.Timezone),
@@ -44,28 +44,32 @@ namespace CareSchedule.Repositories.Implementation
             if (page <= 0) page = 1;
             if (pageSize <= 0) pageSize = 25;
 
-            var total = await q.CountAsync(ct);
-            var items = await q.Skip((page - 1) * pageSize)
-                               .Take(pageSize)
-                               .ToListAsync(ct);
+            var total = q.Count();
+            var items = q.Skip((page - 1) * pageSize)
+                         .Take(pageSize)
+                         .ToList();
 
             return (items, total);
         }
 
-        public Task<Site?> GetAsync(int id, CancellationToken ct = default)
-            => _db.Sites.AsNoTracking().FirstOrDefaultAsync(s => s.SiteId == id, ct);
+        public Site? Get(int id)
+        {
+            return _db.Sites
+                .AsNoTracking()
+                .FirstOrDefault(s => s.SiteId == id);
+        }
 
-        public async Task<Site> CreateAsync(Site entity, CancellationToken ct = default)
+        public Site Create(Site entity)
         {
             _db.Sites.Add(entity);
-            await _db.SaveChangesAsync(ct);
+            _db.SaveChanges();
             return entity;
         }
 
-        public async Task UpdateAsync(Site entity, CancellationToken ct = default)
+        public void Update(Site entity)
         {
             _db.Sites.Update(entity);
-            await _db.SaveChangesAsync(ct);
+            _db.SaveChanges();
         }
     }
 }

@@ -1,158 +1,88 @@
-using System.Text.Json;
 using CareSchedule.DTOs;
 using CareSchedule.Models;
 using CareSchedule.Repositories.Interface;
 using CareSchedule.Services.Interface;
-using CareSchedule.Shared.Exceptions;
+using System.Collections.Generic;
 
 namespace CareSchedule.Services.Implementation
 {
     public class RoomService : IRoomService
     {
-        private readonly IRoomRepository _rooms;
-        private readonly ISiteRepository _sites;
+        private readonly IRoomRepository _repo;
+        public RoomService(IRoomRepository repo) => _repo = repo;
 
-        
-        public RoomService(IRoomRepository rooms, ISiteRepository sites)
+        public List<RoomDto> SearchRoom(RoomSearchQuery q)
         {
-            _rooms = rooms;
-            _sites = sites;
+            var page = q.Page <= 0 ? 1 : q.Page;
+            var pageSize = q.PageSize <= 0 ? 25 : q.PageSize;
+            var sortBy = string.IsNullOrWhiteSpace(q.SortBy) ? "roomname" : q.SortBy;
+            var sortDir = string.IsNullOrWhiteSpace(q.SortDir) ? "asc" : q.SortDir;
+
+            var (items, _) = _repo.Search(
+                roomName: q.RoomName,
+                roomType: null,            // or q.RoomType if you have it in your DTO
+                status: q.Status,
+                siteId: q.SiteId,
+                page: page,
+                pageSize: pageSize,
+                sortBy: sortBy,
+                sortDir: sortDir
+            );
+
+            var list = new List<RoomDto>(items.Count);
+            foreach (var r in items) list.Add(Map(r));
+            return list;
         }
 
-        public List<RoomDto> SearchRoom(RoomSearchQuery query)
+        public RoomDto GetRoom(int id)
         {
-            var (items, _) = _rooms.SearchAsync(
-                RoomName: query.RoomName,
-                RoomType: query.RoomType,
-                status: query.Status,
-                siteId: query.SiteId,
-                page: query.Page <= 0 ? 1 : query.Page,
-                pageSize: query.PageSize <= 0 ? 25 : query.PageSize,
-                sortBy: query.SortBy,
-                sortDir: query.SortDir,
-                ct: CancellationToken.None
-            ).GetAwaiter().GetResult();
-
-            return items.Select(Map).ToList();
-        }
-
-        public RoomDto? GetRoom(int id)
-        {
-            var room = _rooms.GetAsync(id, CancellationToken.None)
-                            .GetAwaiter().GetResult();
-            return room is null ? null : Map(room);
+            var r = _repo.Get(id);
+            if (r is null) throw new KeyNotFoundException("Room not found.");
+            return Map(r);
         }
 
         public RoomDto CreateRoom(RoomCreateDto dto)
         {
-            // 1) Validate basic input
-            if (string.IsNullOrWhiteSpace(dto.RoomName))
-                throw new RoomNameRequiredException();
+            if (string.IsNullOrWhiteSpace(dto.RoomName)) throw new ArgumentException("RoomName is required.");
+            if (dto.SiteId <= 0) throw new ArgumentException("SiteId is required.");
 
-            if (dto.SiteId <= 0)
-                throw new SiteIdRequiredException();
-
-            // 2) Ensure the referenced Site exists
-            var site = _sites.GetAsync(dto.SiteId, CancellationToken.None)
-                            .GetAwaiter().GetResult();
-            if (site is null)
-                throw new SiteNotFoundForRoomException();
-
-            // 3) (Optional) Enforce uniqueness: RoomName per Site
-            var (existing, _) = _rooms.SearchAsync(
-                RoomName: dto.RoomName,
-                RoomType: dto.RoomType,
-                status: null,
-                siteId: dto.SiteId,
-                page: 1,
-                pageSize: 1,
-                sortBy: null,
-                sortDir: null,
-                ct: CancellationToken.None
-            ).GetAwaiter().GetResult();
-            if (existing.Any())
-                throw new DuplicateRoomNameException();
-
-            // 4) Create the entity
-            var entity = new Room
+            var e = new Room
             {
                 RoomName = dto.RoomName.Trim(),
-                RoomType = dto.RoomType.Trim(),
                 SiteId = dto.SiteId,
-                AttributesJson = NormalizeJson(dto.AttributesJson),
+                AttributesJson = dto.AttributesJson,
                 Status = "Active"
             };
-
-            // 5) Persist and map
-            entity = _rooms.CreateAsync(entity, CancellationToken.None)
-                        .GetAwaiter().GetResult();
-
-            return Map(entity);
+            e = _repo.Create(e);
+            return Map(e);
         }
+
         public RoomDto UpdateRoom(int id, RoomUpdateDto dto)
         {
-            
-            var entity = _rooms.GetAsync(id, CancellationToken.None)
-                              .GetAwaiter().GetResult()
-                        ?? throw new KeyNotFoundException("Room not found.");
+            var e = _repo.Get(id);
+            if (e is null) throw new KeyNotFoundException("Room not found.");
 
-            if (!string.IsNullOrWhiteSpace(dto.RoomName))
-                entity.RoomName = dto.RoomName.Trim();
+            if (!string.IsNullOrWhiteSpace(dto.RoomName)) e.RoomName = dto.RoomName.Trim();
+            if (dto.SiteId.HasValue) e.SiteId = dto.SiteId.Value;
+            if (dto.AttributesJson is not null) e.AttributesJson = dto.AttributesJson;
 
-            if (dto.SiteId.HasValue)
-                entity.SiteId = dto.SiteId.Value;
-
-            if (dto.AttributesJson is not null)
-                entity.AttributesJson = NormalizeJson(dto.AttributesJson);
-
-            // inside UpdateRoom, in the block that handles dto.SiteId:
-            if (dto.SiteId.HasValue)
-            {
-                var site = _sites.GetAsync(dto.SiteId.Value, CancellationToken.None)
-                                .GetAwaiter().GetResult();
-                if (site is null)
-                    throw new KeyNotFoundException("Site not found.");
-
-                entity.SiteId = dto.SiteId.Value;
-            }
-
-            _rooms.UpdateAsync(entity, CancellationToken.None)
-                 .GetAwaiter().GetResult();
-
-            return Map(entity);
+            _repo.Update(e);
+            return Map(e);
         }
 
         public void DeactivateRoom(int id)
         {
-            var entity = _rooms.GetAsync(id, CancellationToken.None)
-                              .GetAwaiter().GetResult()
-                        ?? throw new KeyNotFoundException("Room not found.");
-
-            if (string.Equals(entity.Status, "Inactive", StringComparison.Ordinal))
-                return;
-
-            entity.Status = "Inactive";
-
-            _rooms.UpdateAsync(entity, CancellationToken.None)
-                 .GetAwaiter().GetResult();
+            var e = _repo.Get(id);
+            if (e is null) throw new KeyNotFoundException("Room not found.");
+            if (e.Status != "Inactive") { e.Status = "Inactive"; _repo.Update(e); }
         }
 
         public void ActivateRoom(int id)
         {
-            var entity = _rooms.GetAsync(id, CancellationToken.None)
-                              .GetAwaiter().GetResult()
-                        ?? throw new KeyNotFoundException("Room not found.");
-
-            if (string.Equals(entity.Status, "Active", StringComparison.Ordinal))
-                return;
-
-            entity.Status = "Active";
-
-            _rooms.UpdateAsync(entity, CancellationToken.None)
-                 .GetAwaiter().GetResult();
+            var e = _repo.Get(id);
+            if (e is null) throw new KeyNotFoundException("Room not found.");
+            if (e.Status != "Active") { e.Status = "Active"; _repo.Update(e); }
         }
-
-        // --- helpers ---
 
         private static RoomDto Map(Room r) => new()
         {
@@ -162,29 +92,5 @@ namespace CareSchedule.Services.Implementation
             AttributesJson = r.AttributesJson,
             Status = r.Status
         };
-
-        private static void Validate(RoomCreateDto dto)
-        {
-            if (string.IsNullOrWhiteSpace(dto.RoomName))
-                throw new ArgumentException("RoomName is required.");
-
-            if (dto.SiteId <= 0)
-                throw new ArgumentException("SiteId is required.");
-        }
-
-        private static string? NormalizeJson(string? json)
-        {
-            if (string.IsNullOrWhiteSpace(json)) return null;
-            try
-            {
-                using var doc = JsonDocument.Parse(json);
-                return JsonSerializer.Serialize(doc.RootElement);
-            }
-            catch
-            {
-                // keep as-is if not valid JSON (admin free-form)
-                return json;
-            }
-        }
     }
 }

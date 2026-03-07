@@ -1,10 +1,10 @@
 using CareSchedule.Repositories.Implementation;
 using CareSchedule.Repositories.Interface;
-using CareSchedule.Services;
 using CareSchedule.Services.Implementation;
 using CareSchedule.Services.Interface;
 using CareSchedule.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using CareSchedule.API.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,6 +17,21 @@ builder.Services.AddDbContext<CareScheduleContext>(options =>
 builder.Services.AddScoped<ISiteRepository, SiteRepository>();
 builder.Services.AddScoped<ISiteService, SiteService>();
 
+builder.Services.AddScoped<IRoomRepository, RoomRepository>();
+builder.Services.AddScoped<IRoomService, RoomService>();
+
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IUserService, UserService>();
+
+builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
+builder.Services.AddScoped<IAuditLogService, AuditLogService>();
+
+builder.Services.AddScoped<ISystemConfigRepository, SystemConfigRepository>();
+builder.Services.AddScoped<ISystemConfigService, SystemConfigService>();
+
+builder.Services.AddScoped<IHolidayRepository, HolidayRepository>();
+builder.Services.AddScoped<IHolidayService, HolidayService>();
+
 builder.Services.AddScoped<IProviderRepository, ProviderRepository>();
 builder.Services.AddScoped<IServiceRepository, ServiceRepository>();
 builder.Services.AddScoped<IProviderServiceRepository, ProviderServiceRepository>();
@@ -25,6 +40,10 @@ builder.Services.AddScoped<IServiceMasterService, ServiceMasterService>();
 builder.Services.AddScoped<IProviderServiceMappingService, ProviderServiceMappingService>();
 
 var app = builder.Build();
+
+app.UseMiddleware<GlobalExceptionMiddleware>();
+
+app.MapControllers();
 
 if (app.Environment.IsDevelopment())
 {

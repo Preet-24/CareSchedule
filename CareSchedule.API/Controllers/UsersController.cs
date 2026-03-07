@@ -1,0 +1,52 @@
+using CareSchedule.API.Contracts;
+using CareSchedule.DTOs;
+using CareSchedule.Services.Interface;
+using Microsoft.AspNetCore.Mvc;
+
+namespace CareSchedule.API.Controllers
+{
+    [ApiController]
+    [Route("api/iam/users")]
+    public class UsersController : ControllerBase
+    {
+        private readonly IUserService _service;
+        public UsersController(IUserService service) => _service = service;
+
+        [HttpGet]
+        public IActionResult Search([FromQuery] UserSearchQuery q)
+            => Ok(ApiResponse<object>.Ok(_service.SearchUser(q)));
+
+        [HttpGet("{id:int}")]
+        public ActionResult<ApiResponse<UserDto>> Get(int id)
+            => Ok(ApiResponse<UserDto>.Ok(_service.GetUser(id)));
+
+        [HttpPost]
+        public ActionResult<ApiResponse<UserDto>> Create([FromBody] UserCreateDto dto)
+        {
+            if (dto is null) return BadRequest(ApiResponse<object>.Fail(new { code = "BAD_REQUEST" }, "Request body is required."));
+            var created = _service.CreateUser(dto);
+            return CreatedAtAction(nameof(Get), new { id = created.UserId }, ApiResponse<UserDto>.Ok(created, "User created."));
+        }
+
+        [HttpPut("{id:int}")]
+        public ActionResult<ApiResponse<UserDto>> Update(int id, [FromBody] UserUpdateDto dto)
+        {
+            if (dto is null) return BadRequest(ApiResponse<object>.Fail(new { code = "BAD_REQUEST" }, "Request body is required."));
+            return Ok(ApiResponse<UserDto>.Ok(_service.UpdateUser(id, dto), "User updated."));
+        }
+
+        [HttpDelete("{id:int}")]
+        public ActionResult<ApiResponse<object>> Deactivate(int id)
+        {
+            _service.DeactivateUser(id);
+            return Ok(ApiResponse<object>.Ok(new { id }, "User deactivated."));
+        }
+
+        [HttpPost("{id:int}/activate")]
+        public ActionResult<ApiResponse<object>> Activate(int id)
+        {
+            _service.ActivateUser(id);
+            return Ok(ApiResponse<object>.Ok(new { id }, "User activated."));
+        }
+    }
+}
