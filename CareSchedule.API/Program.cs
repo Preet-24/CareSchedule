@@ -5,6 +5,7 @@ using CareSchedule.Services.Interface;
 using CareSchedule.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using CareSchedule.API.Middleware;
+using CareSchedule.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,6 +14,9 @@ builder.Services.AddControllers();
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<CareScheduleContext>(options =>
     options.UseSqlServer(connectionString));
+
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 builder.Services.AddScoped<ISiteRepository, SiteRepository>();
 builder.Services.AddScoped<ISiteService, SiteService>();

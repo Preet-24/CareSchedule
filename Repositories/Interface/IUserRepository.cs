@@ -1,9 +1,11 @@
 using CareSchedule.Models;
-
 namespace CareSchedule.Repositories.Interface
 {
     public interface IUserRepository
     {
+        User? GetByEmail(string email, string role);
+        User? GetById(int userId);
+
         (List<User> Items, int Total) Search(
             string? name,
             string? role,
