@@ -16,5 +16,6 @@ namespace CareSchedule.Repositories.Interface
         SystemConfig Create(SystemConfig entity);
         void Update(SystemConfig entity);
         void Delete(int id);
+        int? GetInt(string key, int? defaultValue);
     }
 }

@@ -10,5 +10,6 @@ namespace CareSchedule.Repositories.Interface
         ProviderService? GetById(int psid);
         ProviderService Create(ProviderService entity);
         void Delete(ProviderService entity);
+        IEnumerable<ProviderService> GetActiveByProvider(int providerId);
     }
 }

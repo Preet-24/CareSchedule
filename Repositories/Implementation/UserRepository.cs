@@ -1,3 +1,4 @@
+using System.Linq;
 using CareSchedule.Infrastructure.Data;
 using CareSchedule.Models;
 using CareSchedule.Repositories.Interface;
@@ -12,6 +13,25 @@ namespace CareSchedule.Repositories.Implementation
         public UserRepository(CareScheduleContext db)
         {
             _db = db;
+        }
+
+        public User? GetByEmail(string email, string role)
+        {
+            // Email is UNIQUE by schema
+            var e = (email ?? string.Empty).Trim();
+            var r = (role  ?? string.Empty).Trim();
+
+            // Compare case-insensitively in DB
+            return _db.Users.FirstOrDefault(u =>
+                u.Email == e &&
+                u.Role.ToLower() == r.ToLower() &&
+                u.Status == "Active"
+            );
+        }
+
+        public User? GetById(int userId)
+        {
+            return _db.Users.FirstOrDefault(u => u.UserId == userId);
         }
 
         public (List<User> Items, int Total) Search(

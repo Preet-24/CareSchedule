@@ -62,5 +62,12 @@ namespace CareSchedule.Repositories.Implementation
             _db.ProviderServices.Remove(entity);
             _db.SaveChanges();
         }
+
+        public IEnumerable<ProviderService> GetActiveByProvider(int providerId)
+        {
+            return _db.ProviderServices
+                      .Where(ps => ps.ProviderId == providerId && ps.Status == "Active")
+                      .ToList();
+        }
     }
 }
