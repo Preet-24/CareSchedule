@@ -18,6 +18,28 @@ builder.Services.AddDbContext<CareScheduleContext>(options =>
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
+
+// Booking repos
+builder.Services.AddScoped<IAppointmentRepository, AppointmentRepository>();
+builder.Services.AddScoped<IAppointmentChangeRepository, AppointmentChangeRepository>();
+builder.Services.AddScoped<IPublishedSlotBookingRepository, PublishedSlotBookingRepository>();
+builder.Services.AddScoped<ICalendarEventRepository, CalendarEventRepository>();
+builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
+builder.Services.AddScoped<IReminderScheduleRepository, ReminderScheduleRepository>();
+
+// Booking service
+builder.Services.AddScoped<IBookingService, BookingService>();
+
+
+// Repositories
+builder.Services.AddScoped<IAvailabilityTemplateRepository, AvailabilityTemplateRepository>();
+builder.Services.AddScoped<IAvailabilityBlockRepository, AvailabilityBlockRepository>();
+builder.Services.AddScoped<IPublishedSlotRepository, PublishedSlotRepository>();
+builder.Services.AddScoped<ICalendarEventRepository, CalendarEventRepository>();
+
+// Service
+builder.Services.AddScoped<IAvailabilityService, AvailabilityService>();
+
 builder.Services.AddScoped<ISiteRepository, SiteRepository>();
 builder.Services.AddScoped<ISiteService, SiteService>();
 

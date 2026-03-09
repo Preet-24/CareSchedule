@@ -86,5 +86,13 @@ namespace CareSchedule.Repositories.Implementation
             _db.SystemConfigs.Remove(entity);
             _db.SaveChanges();
         }
+
+        public int? GetInt(string key, int? defaultValue)
+        {
+            var row = _db.SystemConfigs.FirstOrDefault(x => x.Key == key);
+            if (row == null) return defaultValue;
+            if (int.TryParse(row.Value, out var v)) return v;
+            return defaultValue;
+        }
     }
 }
