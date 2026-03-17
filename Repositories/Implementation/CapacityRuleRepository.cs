@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using CareSchedule.Models;
 using CareSchedule.Infrastructure.Data;
 using CareSchedule.Repositories.Interface;
@@ -17,22 +18,32 @@ namespace CareSchedule.Repositories.Implementation
 
         public void Add(CapacityRule entity)
         {
-            throw new NotImplementedException();
+            _db.CapacityRules.Add(entity);
+            _db.SaveChanges();
         }
 
         public void Update(CapacityRule entity)
         {
-            throw new NotImplementedException();
+            _db.CapacityRules.Update(entity);
+            _db.SaveChanges();
         }
 
         public CapacityRule? GetById(int ruleId)
         {
-            throw new NotImplementedException();
+            return _db.CapacityRules.FirstOrDefault(r => r.RuleId == ruleId);
         }
 
         public IEnumerable<CapacityRule> Search(string? scope, string? status)
         {
-            throw new NotImplementedException();
+            var q = _db.CapacityRules.AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(scope))
+                q = q.Where(r => r.Scope == scope);
+
+            if (!string.IsNullOrWhiteSpace(status))
+                q = q.Where(r => r.Status == status);
+
+            return q.OrderByDescending(r => r.EffectiveFrom).ToList();
         }
     }
 }

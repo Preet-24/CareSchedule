@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using CareSchedule.Models;
 using CareSchedule.Infrastructure.Data;
 using CareSchedule.Repositories.Interface;
@@ -17,22 +18,32 @@ namespace CareSchedule.Repositories.Implementation
 
         public void Add(Sla entity)
         {
-            throw new NotImplementedException();
+            _db.Slas.Add(entity);
+            _db.SaveChanges();
         }
 
         public void Update(Sla entity)
         {
-            throw new NotImplementedException();
+            _db.Slas.Update(entity);
+            _db.SaveChanges();
         }
 
         public Sla? GetById(int slaId)
         {
-            throw new NotImplementedException();
+            return _db.Slas.FirstOrDefault(s => s.Slaid == slaId);
         }
 
         public IEnumerable<Sla> Search(string? scope, string? status)
         {
-            throw new NotImplementedException();
+            var q = _db.Slas.AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(scope))
+                q = q.Where(s => s.Scope == scope);
+
+            if (!string.IsNullOrWhiteSpace(status))
+                q = q.Where(s => s.Status == status);
+
+            return q.OrderBy(s => s.Metric).ToList();
         }
     }
 }
