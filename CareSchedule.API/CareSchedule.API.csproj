@@ -16,7 +16,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\CareSchedule.Shared\CareSchedule.Shared.csproj" />
     <ProjectReference Include="..\CareSchedule.Infrastructure\CareSchedule.Infrastructure.csproj" />
     <ProjectReference Include="..\Models\CareSchedule.Models.csproj" />
     <ProjectReference Include="..\DTOs\CareSchedule.DTOs.csproj" />
