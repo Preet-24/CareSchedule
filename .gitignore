@@ -3,6 +3,9 @@
 ##
 ## Get latest from `dotnet new gitignore`
 
+#ignore guide file
+CareSchedule_Architecture_Guide.md
+
 # dotenv files
 .env
 
