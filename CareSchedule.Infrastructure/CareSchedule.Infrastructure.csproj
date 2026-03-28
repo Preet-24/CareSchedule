@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <ProjectReference Include="..\CareSchedule.Shared\CareSchedule.Shared.csproj" />
     <ProjectReference Include="..\Models\CareSchedule.Models.csproj" />
   </ItemGroup>
 

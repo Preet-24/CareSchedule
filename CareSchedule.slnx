@@ -1,5 +1,4 @@
 <Solution>
   <Project Path="CareSchedule.API/CareSchedule.API.csproj" />
   <Project Path="CareSchedule.Infrastructure/CareSchedule.Infrastructure.csproj" />
-  <Project Path="CareSchedule.Shared/CareSchedule.Shared.csproj" />
 </Solution>
