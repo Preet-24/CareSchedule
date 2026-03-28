@@ -14,11 +14,12 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true);
 
 builder.Services.AddControllers();
+builder.Services.AddSwaggerGen();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 if (string.IsNullOrWhiteSpace(connectionString))
 {
-    throw new InvalidOperationException("Database connection string not configured. \n Set ConnectionStrings:DefaultConnection in appsettings.Local.json.");
+    throw new InvalidOperationException("\x1b[1;31m Database connection string not configured. \n Set ConnectionStrings:DefaultConnection in  appsettings.Local.json.\x1b[0m");
 }
 builder.Services.AddDbContext<CareScheduleContext>(options =>
     options.UseSqlServer(connectionString));
@@ -126,6 +127,9 @@ app.UseHttpsRedirection();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    app.UseSwagger();
+    app.UseSwaggerUI();   
+
 }
 
 app.MapControllers();
