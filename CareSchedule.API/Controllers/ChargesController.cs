@@ -15,5 +15,12 @@ namespace CareSchedule.API.Controllers
             var result = _billingservice.CreateCharge(dto);
             return ApiResponse<ChargeRefResponseDto>.Ok(result, "Charge created.");
         }
+
+        [HttpGet("by-appointment/{appointmentId:int}")]
+        public ActionResult<ApiResponse<ChargeRefResponseDto>> GetByAppointment(int appointmentId)
+        {
+            var result = _billingservice.GetByAppointment(appointmentId);
+            return ApiResponse<ChargeRefResponseDto>.Ok(result, "Charge fetched.");
+        }
     }
 }
