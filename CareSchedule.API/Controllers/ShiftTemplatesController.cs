@@ -9,6 +9,20 @@ namespace CareSchedule.API.Controllers
     [Route("shift-templates")]
     public class ShiftTemplatesController(IRosterService _shifttemplateservice) : ControllerBase
     {
+        [HttpGet]
+        public ActionResult<ApiResponse<IEnumerable<ShiftTemplateResponseDto>>> Search([FromQuery] ShiftTemplateSearchDto query)
+        {
+            var list = _shifttemplateservice.SearchShiftTemplates(query ?? new ShiftTemplateSearchDto());
+            return ApiResponse<IEnumerable<ShiftTemplateResponseDto>>.Ok(list, "Shift templates fetched.");
+        }
+
+        [HttpGet("{id:int}")]
+        public ActionResult<ApiResponse<ShiftTemplateResponseDto>> Get(int id)
+        {
+            var item = _shifttemplateservice.GetShiftTemplate(id);
+            return ApiResponse<ShiftTemplateResponseDto>.Ok(item, "Shift template fetched.");
+        }
+
         [HttpPost]
         public ActionResult<ApiResponse<ShiftTemplateResponseDto>> Create([FromBody] CreateShiftTemplateDto dto)
         {

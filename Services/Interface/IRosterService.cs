@@ -9,6 +9,8 @@ namespace CareSchedule.Services.Interface
         ShiftTemplateResponseDto CreateShiftTemplate(CreateShiftTemplateDto dto);
         ShiftTemplateResponseDto UpdateShiftTemplate(int id, UpdateShiftTemplateDto dto);
         void DeleteShiftTemplate(int id);
+        ShiftTemplateResponseDto GetShiftTemplate(int id);
+        IEnumerable<ShiftTemplateResponseDto> SearchShiftTemplates(ShiftTemplateSearchDto dto);
 
         // Rosters
         RosterResponseDto CreateRoster(CreateRosterDto dto);

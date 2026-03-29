@@ -35,6 +35,13 @@ namespace CareSchedule.DTOs
         public string Status { get; set; } = "";
     }
 
+    public class ShiftTemplateSearchDto
+    {
+        public int? SiteId { get; set; }
+        public string? Role { get; set; }
+        public string? Status { get; set; }
+    }
+
     // --------- Roster ---------
     public class CreateRosterDto
     {

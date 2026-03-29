@@ -103,6 +103,21 @@ namespace CareSchedule.Services.Implementation
             });
         }
 
+        public ShiftTemplateResponseDto GetShiftTemplate(int id)
+        {
+            var e = _shiftRepo.GetById(id);
+            if (e is null) throw new KeyNotFoundException("ShiftTemplate not found.");
+            return MapShiftTemplate(e);
+        }
+
+        public IEnumerable<ShiftTemplateResponseDto> SearchShiftTemplates(ShiftTemplateSearchDto dto)
+        {
+            if (dto is null) throw new ArgumentNullException(nameof(dto));
+
+            var items = _shiftRepo.Search(dto.SiteId, dto.Role, dto.Status);
+            return items.Select(MapShiftTemplate).ToList();
+        }
+
         // --------- Rosters ---------
 
         public RosterResponseDto CreateRoster(CreateRosterDto dto)
